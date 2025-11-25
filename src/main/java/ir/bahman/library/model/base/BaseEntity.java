@@ -1,4 +1,4 @@
-package ir.bahman.library.model;
+package ir.bahman.library.model.base;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
