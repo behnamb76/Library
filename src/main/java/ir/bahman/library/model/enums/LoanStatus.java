@@ -1,7 +1,7 @@
 package ir.bahman.library.model.enums;
 
-public enum AccountStatus {
-    PENDING,
+public enum LoanStatus {
     ACTIVE,
-    INACTIVE
+    RETURNED,
+    OVERDUE
 }

@@ -1,7 +1,8 @@
 package ir.bahman.library.model.enums;
 
-public enum AccountStatus {
+public enum PenaltyStatus {
     PENDING,
     ACTIVE,
-    INACTIVE
+    PAID,
+    CANCELLED
 }
