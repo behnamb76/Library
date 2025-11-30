@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,8 @@ public class Person extends BaseEntity<Long> {
     @Column(unique = true)
     private String phoneNumber;
 
+    private LocalDate birthday;
+
     @OneToOne(mappedBy = "person", cascade = CascadeType.ALL)
     private Account account;
 
@@ -38,4 +41,13 @@ public class Person extends BaseEntity<Long> {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<Role> roles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member")
+    private List<Loan> loans = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member")
+    private List<Reservation> reservations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member")
+    private List<Payment> payments = new ArrayList<>();
 }

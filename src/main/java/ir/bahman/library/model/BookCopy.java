@@ -2,14 +2,15 @@ package ir.bahman.library.model;
 
 import ir.bahman.library.model.base.BaseEntity;
 import ir.bahman.library.model.enums.BookCopyStatus;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -18,6 +19,19 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 public class BookCopy extends BaseEntity<Long> {
-    private UUID barcode;
+    private String barcode;
+
+    @Enumerated(EnumType.STRING)
     private BookCopyStatus status;
+
+    @ManyToOne
+    @JoinColumn(name = "book_id")
+    private Book book;
+
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private Location location;
+
+    @OneToMany(mappedBy = "bookCopy")
+    private List<Loan> loans = new ArrayList<>();
 }

@@ -1,8 +1,8 @@
 package ir.bahman.library.model;
 
 import ir.bahman.library.model.base.BaseEntity;
-import ir.bahman.library.model.enums.PaymentFor;
-import ir.bahman.library.model.enums.PaymentMethod;
+import ir.bahman.library.model.enums.PenaltyReason;
+import ir.bahman.library.model.enums.PenaltyStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,26 +10,26 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class Payment extends BaseEntity<Long> {
+public class Penalty extends BaseEntity<Long> {
     private Double amount;
 
-    private LocalDateTime paymentDate;
+    @Enumerated(EnumType.STRING)
+    private PenaltyReason reason;
 
     @Enumerated(EnumType.STRING)
-    private PaymentMethod method;
+    private PenaltyStatus status;
 
-    @Enumerated(EnumType.STRING)
-    private PaymentFor paymentFor;
+    @OneToOne
+    @JoinColumn(name = "payment_id", unique = true)
+    private Payment payment;
 
-    @ManyToOne
-    @JoinColumn(name = "member_id", nullable = false)
-    private Person member;
+    @OneToOne
+    @JoinColumn(name = "loan_id")
+    private Loan loan;
 }
