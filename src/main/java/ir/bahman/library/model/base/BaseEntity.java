@@ -44,6 +44,13 @@ public class BaseEntity<ID extends Serializable> implements Serializable {
 
     protected LocalDateTime deletedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        if (this.deleted == null) {
+            this.deleted = false;
+        }
+    }
+
     public void softDelete() {
         this.deleted = true;
         this.deletedAt = LocalDateTime.now();
