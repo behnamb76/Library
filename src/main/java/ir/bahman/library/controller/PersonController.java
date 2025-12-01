@@ -25,7 +25,7 @@ public class PersonController {
     }
 
     @PostMapping("/member-register")
-    public ResponseEntity<PersonDTO> studentRegister(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<PersonDTO> memberRegister(@Valid @RequestBody RegisterRequest request) {
         Person person = personService.register(request);
         personService.assignRoleToPerson("member" , person.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(personMapper.toDto(person));

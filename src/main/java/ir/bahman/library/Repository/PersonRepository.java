@@ -1,6 +1,7 @@
 package ir.bahman.library.Repository;
 
 import ir.bahman.library.model.Person;
+import ir.bahman.library.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,4 +27,6 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
                 LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """)
     List<Person> searchByKeyword(@Param("keyword") String keyword);
+
+    boolean existsByRolesContains(Role role);
 }

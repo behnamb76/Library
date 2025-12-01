@@ -29,7 +29,7 @@ public class JwtService {
             @Value("${jwt.issuer:library}") String issuer
     ) throws Exception {
         this.privateKey = KeyUtils.loadPrivateKey("keys/private_key.pem");
-        this.publicKey = KeyUtils.loadPublicKey("/keys/public_key.pem");
+        this.publicKey = KeyUtils.loadPublicKey("keys/public_key.pem");
         this.accessTokenSeconds = accessTokenSeconds;
         this.refreshTokenSeconds = refreshTokenSeconds;
         this.issuer = issuer;
