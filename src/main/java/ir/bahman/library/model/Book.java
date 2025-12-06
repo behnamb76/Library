@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class Book extends BaseEntity<Long> {
 
     private String publisher;
 
-    private Integer publicationYear;
+    private Year publicationYear;
 
     private String description;
 
