@@ -19,6 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @SuperBuilder
 public class BookCopy extends BaseEntity<Long> {
+    @Column(unique = true)
     private String barcode;
 
     @Enumerated(EnumType.STRING)

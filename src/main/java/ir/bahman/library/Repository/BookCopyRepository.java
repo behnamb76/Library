@@ -8,10 +8,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from BookCopy c where c.id = :id")
     BookCopy lockById(@Param("id") Long id);
+
+    List<BookCopy> findAllByStatus_ReturnedPendingCheck();
+
+    @Query("""
+    SELECT bc
+    FROM BookCopy bc
+    WHERE bc.status = 'AVAILABLE'
+      AND bc.deleted = false
+""")
+    List<BookCopy> findAvailableBookCopies();
 }

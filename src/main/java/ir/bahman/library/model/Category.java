@@ -23,13 +23,12 @@ import java.util.List;
 public class Category extends BaseEntity<Long> {
     private String name;
 
+    private String description;
+
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Category parent;
 
     @OneToMany(mappedBy = "category")
     private List<Book> books = new ArrayList<>();
-
-    @OneToMany(mappedBy = "category")
-    private List<Location> locations = new ArrayList<>();
 }

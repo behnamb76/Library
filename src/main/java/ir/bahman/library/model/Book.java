@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,8 @@ public class Book extends BaseEntity<Long> {
     private String description;
 
     private Integer edition;
+
+    private BigDecimal replacementCost;
 
     @OneToMany(mappedBy = "book")
     private List<BookCopy> bookCopies = new ArrayList<>();

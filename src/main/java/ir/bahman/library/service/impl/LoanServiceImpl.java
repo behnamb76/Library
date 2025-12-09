@@ -4,6 +4,7 @@ import ir.bahman.library.Repository.BookCopyRepository;
 import ir.bahman.library.Repository.LoanRepository;
 import ir.bahman.library.Repository.PersonRepository;
 import ir.bahman.library.Repository.ReservationRepository;
+import ir.bahman.library.exception.AlreadyExistsException;
 import ir.bahman.library.exception.EntityNotFoundException;
 import ir.bahman.library.exception.NotAvailableException;
 import ir.bahman.library.model.BookCopy;
@@ -12,25 +13,32 @@ import ir.bahman.library.model.Person;
 import ir.bahman.library.model.Reservation;
 import ir.bahman.library.model.enums.BookCopyStatus;
 import ir.bahman.library.model.enums.LoanStatus;
+import ir.bahman.library.model.enums.PenaltyReason;
 import ir.bahman.library.model.enums.ReservationStatus;
 import ir.bahman.library.service.LoanService;
+import ir.bahman.library.service.PenaltyService;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Service
 public class LoanServiceImpl extends BaseServiceImpl<Loan, Long> implements LoanService {
     private final LoanRepository loanRepository;
     private final BookCopyRepository bookCopyRepository;
     private final ReservationRepository reservationRepository;
     private final PersonRepository personRepository;
+    private final PenaltyService penaltyService;
 
-    public LoanServiceImpl(JpaRepository<Loan, Long> repository, LoanRepository loanRepository, BookCopyRepository bookCopyRepository, ReservationRepository reservationRepository, PersonRepository personRepository) {
+    public LoanServiceImpl(JpaRepository<Loan, Long> repository, LoanRepository loanRepository, BookCopyRepository bookCopyRepository, ReservationRepository reservationRepository, PersonRepository personRepository, PenaltyService penaltyService) {
         super(repository);
         this.loanRepository = loanRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.reservationRepository = reservationRepository;
         this.personRepository = personRepository;
+        this.penaltyService = penaltyService;
     }
 
     @Override
@@ -75,7 +83,46 @@ public class LoanServiceImpl extends BaseServiceImpl<Loan, Long> implements Loan
     }
 
     @Override
+    public void returnBook(Long loanId) {
+        penaltyService.freezePenaltyForLoan(loanId);
+
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new EntityNotFoundException("Loan not found!"));
+
+        if (loan.getReturnDate() != null) {
+            throw new AlreadyExistsException("Already returned");
+        }
+
+        loan.setReturnDate(LocalDateTime.now());
+        loan.setStatus(LoanStatus.RETURNED);
+
+        if (loan.getReturnDate().isAfter(loan.getDueDate())) {
+            penaltyService.createPenaltyForReason(loan.getId(), PenaltyReason.OVERDUE);
+        }
+
+        BookCopy bookCopy = loan.getBookCopy();
+        bookCopy.setStatus(BookCopyStatus.RETURNED_PENDING_CHECK);
+        bookCopyRepository.save(bookCopy);
+
+        loanRepository.save(loan);
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    @Override
+    public void checkOverdueLoans() {
+        LocalDateTime now = LocalDateTime.now();
+        loanRepository.markLoansAsOverdue(now);
+    }
+
+    @Override
     public Loan update(Long id, Loan loan) {
-        return null;
+        Loan existing = findById(id);
+
+        existing.setLoanDate(loan.getLoanDate());
+        existing.setDueDate(loan.getDueDate());
+        existing.setReturnDate(loan.getReturnDate());
+        existing.setStatus(loan.getStatus());
+
+        return loanRepository.save(existing);
     }
 }

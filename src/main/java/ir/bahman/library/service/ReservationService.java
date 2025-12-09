@@ -10,4 +10,6 @@ public interface ReservationService extends BaseService<Reservation, Long> {
     void reorderQueue(Long bookId);
 
     void expireReadyForPickupReservation();
+
+    void assignAvailableCopiesToReservations();
 }

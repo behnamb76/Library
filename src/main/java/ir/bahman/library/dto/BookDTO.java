@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.validator.constraints.ISBN;
 
+import java.math.BigDecimal;
 import java.time.Year;
 
 @Getter
@@ -39,6 +40,9 @@ public class BookDTO {
     private Integer edition;
 
     @NotBlank(message = "Category is required")
-    @Size(max = 50, message = "Category must not exceed 50 characters")
+    @Size(max = 50, message = "Category name must not exceed 50 characters")
     private String categoryName;
+
+    @Positive(message = "Replacement cost must be a positive number")
+    private BigDecimal replacementCost;
 }

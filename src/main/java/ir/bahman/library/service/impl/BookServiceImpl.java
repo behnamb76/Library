@@ -33,7 +33,7 @@ public class BookServiceImpl extends BaseServiceImpl<Book, Long> implements Book
             throw new AlreadyExistsException("This book already exists!");
         }
 
-        Category category = categoryRepository.findByName(book.getCategory().getName())
+        Category category = categoryRepository.findByNameIgnoreCase(book.getCategory().getName())
                 .orElseThrow(() -> new EntityNotFoundException("Category not found!"));
         book.setCategory(category);
         bookRepository.save(book);

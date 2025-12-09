@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -17,13 +20,15 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class Penalty extends BaseEntity<Long> {
-    private Double amount;
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     private PenaltyReason reason;
 
     @Enumerated(EnumType.STRING)
     private PenaltyStatus status;
+
+    private LocalDateTime lastCalculatedAt;
 
     @OneToOne
     @JoinColumn(name = "payment_id", unique = true)

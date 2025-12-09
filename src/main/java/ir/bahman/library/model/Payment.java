@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @SuperBuilder
 public class Payment extends BaseEntity<Long> {
-    private Double amount;
+    private BigDecimal amount;
 
     private LocalDateTime paymentDate;
 
@@ -32,4 +33,7 @@ public class Payment extends BaseEntity<Long> {
     @ManyToOne
     @JoinColumn(name = "member_id", nullable = false)
     private Person member;
+
+    @OneToOne(mappedBy = "payment")
+    private Penalty penalty;
 }

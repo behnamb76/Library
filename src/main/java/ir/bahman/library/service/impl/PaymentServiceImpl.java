@@ -1,0 +1,64 @@
+package ir.bahman.library.service.impl;
+
+import ir.bahman.library.Repository.PaymentRepository;
+import ir.bahman.library.Repository.PenaltyRepository;
+import ir.bahman.library.exception.AlreadyExistsException;
+import ir.bahman.library.exception.EntityNotFoundException;
+import ir.bahman.library.model.Payment;
+import ir.bahman.library.model.Penalty;
+import ir.bahman.library.model.enums.PaymentFor;
+import ir.bahman.library.model.enums.PaymentMethod;
+import ir.bahman.library.model.enums.PenaltyStatus;
+import ir.bahman.library.service.PaymentService;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+public class PaymentServiceImpl extends BaseServiceImpl<Payment, Long> implements PaymentService {
+    private final PaymentRepository paymentRepository;
+    private final PenaltyRepository penaltyRepository;
+
+    public PaymentServiceImpl(JpaRepository<Payment, Long> repository, PaymentRepository paymentRepository, PenaltyRepository penaltyRepository) {
+        super(repository);
+        this.paymentRepository = paymentRepository;
+        this.penaltyRepository = penaltyRepository;
+    }
+
+    @Override
+    public Payment payPenalty(Long penaltyId, PaymentMethod method) {
+        Penalty penalty = penaltyRepository.findById(penaltyId)
+                .orElseThrow(() -> new EntityNotFoundException("Penalty not found!"));
+
+        if (penalty.getStatus() == PenaltyStatus.PAID) {
+            throw new AlreadyExistsException("Penalty already paid");
+        }
+
+        Payment payment = Payment.builder()
+                .amount(penalty.getAmount())
+                .paymentDate(LocalDateTime.now())
+                .method(method)
+                .paymentFor(PaymentFor.PENALTY)
+                .member(penalty.getLoan().getMember())
+                .penalty(penalty)
+                .build();
+
+        penalty.setStatus(PenaltyStatus.PAID);
+
+        return persist(payment);
+    }
+
+    @Override
+    public Payment update(Long id, Payment payment) {
+        Payment existing = paymentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Payment not found!"));
+
+        existing.setAmount(payment.getAmount());
+        existing.setPaymentDate(payment.getPaymentDate());
+        existing.setMethod(payment.getMethod());
+        existing.setPaymentFor(payment.getPaymentFor());
+
+        return paymentRepository.save(payment);
+    }
+}
