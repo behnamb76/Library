@@ -1,8 +1,8 @@
 package ir.bahman.library.service.impl;
 
+import ir.bahman.library.exception.EntityNotFoundException;
 import ir.bahman.library.model.base.BaseEntity;
 import ir.bahman.library.service.BaseService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.jpa.repository.JpaRepository;

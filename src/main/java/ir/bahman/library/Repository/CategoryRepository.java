@@ -15,7 +15,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByNameIgnoreCase(String name);
 
     @Query("""
-        select c
+        select count(c) > 0
         from Category c
         where lower(c.name) = lower(:name)
           and c.deleted = false

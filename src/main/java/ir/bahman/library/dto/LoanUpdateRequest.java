@@ -18,7 +18,6 @@ public class LoanUpdateRequest {
     @NotNull
     private LocalDateTime dueDate;
 
-    @NotNull
     private LocalDateTime returnDate;
 
     @NotNull

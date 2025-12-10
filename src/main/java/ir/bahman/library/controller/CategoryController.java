@@ -24,6 +24,7 @@ public class CategoryController {
         this.categoryMapper = categoryMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO dto) {
         Category category = categoryService.persist(categoryMapper.toEntity(dto));
@@ -31,6 +32,7 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoryMapper.toDto(category));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateCategory(@Valid @RequestBody CategoryDTO dto, @PathVariable Long id) {
         categoryService.update(id, categoryMapper.toEntity(dto));
@@ -38,6 +40,7 @@ public class CategoryController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping("/{id}")
     public ResponseEntity<CategoryDTO> getCategory(@PathVariable Long id) {
         Category category = categoryService.findById(id);
@@ -45,6 +48,7 @@ public class CategoryController {
         return ResponseEntity.ok().body(categoryMapper.toDto(category));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
         List<CategoryDTO> dtoList = categoryService.findAll()

@@ -18,7 +18,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     long countByBookId(Long bookId);
 
-    boolean existsByBookIdAndLoanIsContaining(Long bookId);
+    @Query("""
+    select count(r) > 0
+    from Reservation r
+    where r.member.id = :memberId
+      and r.book.id = :bookId
+      and r.status in ('ACTIVE', 'READY_FOR_PICKUP')
+""")
+    boolean existsActiveReservation(@Param("memberId") Long memberId,
+                                    @Param("bookId") Long bookId);
 
     List<Reservation> findByBook_IdAndStatusOrderByQueuePositionAsc(Long bookId, ReservationStatus status);
 
@@ -32,7 +40,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 """)
     void expireReadyForPickupReservations(@Param("now") LocalDateTime now);
 
-    List<Reservation> findByBook_IdAndStatus_Active(Long bookId);
+    @Query("""
+    select count(l) > 0
+    from Loan l
+    where l.member.id = :memberId
+      and l.bookCopy.book.id = :bookId
+      and l.returnDate is null
+""")
+    boolean userHasLoanedBook(@Param("memberId") Long memberId,
+                              @Param("bookId") Long bookId);
 
     @Query("""
     SELECT r

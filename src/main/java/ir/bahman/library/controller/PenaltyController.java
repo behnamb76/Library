@@ -8,6 +8,7 @@ import ir.bahman.library.service.PenaltyService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,36 +24,42 @@ public class PenaltyController {
         this.penaltyMapper = penaltyMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PostMapping("/{loanId}")
     public ResponseEntity<PenaltyDTO> createPenaltyByLoanIdAndReason(@PathVariable Long loanId, @RequestParam String reason) {
         Penalty penalty = penaltyService.createPenaltyForReason(loanId, PenaltyReason.valueOf(reason));
         return ResponseEntity.status(HttpStatus.CREATED).body(penaltyMapper.toDto(penalty));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PostMapping("/create-overdue-penalties")
     public ResponseEntity<Void> CreatePenaltiesForOverdueLoans() {
         penaltyService.autoCreatePenaltiesForOverdueLoans();
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping("/freeze-penalty/{loanId}")
     public ResponseEntity<Void> freezePenaltyForLoan(@PathVariable Long loanId) {
         penaltyService.freezePenaltyForLoan(loanId);
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updatePenalty(@PathVariable Long id, @Valid @RequestBody PenaltyDTO dto) {
         penaltyService.update(id, penaltyMapper.toEntity(dto));
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping("/{id}")
     public ResponseEntity<PenaltyDTO> getPenalty(@PathVariable Long id) {
         Penalty penalty = penaltyService.findById(id);
         return ResponseEntity.ok().body(penaltyMapper.toDto(penalty));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @GetMapping("/member/{memberId}")
     public ResponseEntity<List<PenaltyDTO>> getPenaltiesByMemberId(@PathVariable Long memberId) {
         List<PenaltyDTO> dtoList = penaltyService.findPenaltyByMemberId(memberId)

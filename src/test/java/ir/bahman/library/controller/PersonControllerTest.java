@@ -3,26 +3,31 @@ package ir.bahman.library.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.bahman.library.Repository.AccountRepository;
 import ir.bahman.library.Repository.PersonRepository;
+import ir.bahman.library.Repository.RoleRepository;
 import ir.bahman.library.dto.AssignRoleRequest;
 import ir.bahman.library.dto.LoginRequest;
 import ir.bahman.library.dto.PersonDTO;
 import ir.bahman.library.dto.RegisterRequest;
 import ir.bahman.library.model.Account;
 import ir.bahman.library.model.Person;
+import ir.bahman.library.model.Role;
 import ir.bahman.library.model.enums.AccountStatus;
 import ir.bahman.library.security.JwtService;
 import ir.bahman.library.service.AuthService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,43 +52,84 @@ class PersonControllerTest {
     private AuthService authService;
 
     @Autowired
-    private JwtService jwtService;
-
-    @Autowired
     private PersonRepository personRepository;
 
     @Autowired
     private AccountRepository accountRepository;
 
-    private String adminAccessToken;
-    private String memberAccessToken;
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private String adminToken;
+    private String memberToken;
+    private Long memberId;
 
     @BeforeEach
     void setUp() throws Exception {
-        Map<String, String> adminTokens = authService.login(new LoginRequest("admin", "admin"));
-        adminAccessToken = adminTokens.get("accessToken");
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
+        Role userRole = roleRepository.findByName("USER").orElseThrow();
+        Role memberRole = roleRepository.findByName("MEMBER").orElseThrow();
 
-        RegisterRequest memberReq = RegisterRequest.builder()
+        Person admin = Person.builder()
+                .firstName("Admin")
+                .lastName("User")
+                .nationalCode("1234567890")
+                .phoneNumber("09123456789")
+                .birthday(LocalDate.of(1980, 1, 1))
+                .roles(List.of(adminRole, userRole))
+                .deleted(false)
+                .build();
+        admin = personRepository.save(admin);
+
+        Account adminAccount = Account.builder()
+                .username("admin1")
+                .password(passwordEncoder.encode("admin1"))
+                .status(AccountStatus.ACTIVE)
+                .person(admin)
+                .activeRole(adminRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(adminAccount);
+
+        Person member = Person.builder()
                 .firstName("Member")
                 .lastName("User")
-                .nationalCode("1111111111")
-                .phoneNumber("09111111111")
+                .nationalCode("0987654321")
+                .phoneNumber("09876543210")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .username("memberuser")
-                .password("Pass1234")
+                .roles(List.of(userRole, memberRole))
+                .deleted(false)
                 .build();
+        member = personRepository.save(member);
+        this.memberId = member.getId();
 
-        mockMvc.perform(post("/api/person/member-register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(memberReq)))
-                .andExpect(status().isCreated());
+        Account memberAccount = Account.builder()
+                .username("member")
+                .password(passwordEncoder.encode("Pass1234"))
+                .status(AccountStatus.PENDING)
+                .person(member)
+                .activeRole(userRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(memberAccount);
 
-        Account memberAccount = accountRepository.findByUsername("memberuser").orElseThrow();
         memberAccount.setStatus(AccountStatus.ACTIVE);
         accountRepository.save(memberAccount);
 
-        Map<String, String> memberTokens = authService.login(new LoginRequest("memberuser", "Pass1234"));
-        memberAccessToken = memberTokens.get("accessToken");
+        Map<String, String> adminTokens = authService.login(new LoginRequest("admin1", "admin1"));
+        this.adminToken = adminTokens.get("accessToken");
+
+        Map<String, String> memberTokens = authService.login(new LoginRequest("member", "Pass1234"));
+        this.memberToken = memberTokens.get("accessToken");
+    }
+
+    @AfterEach
+    void tearDown(){
+        accountRepository.deleteAll();
+        personRepository.deleteAll();
     }
 
     @Test
@@ -170,7 +216,7 @@ class PersonControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/person/librarian-register")
-                        .header("Authorization", "Bearer " + adminAccessToken)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -197,14 +243,14 @@ class PersonControllerTest {
 
     @Test
     void testAssignRoleToPerson() throws Exception {
-        Person person = personRepository.findByAccountUsername("memberuser").orElseThrow();
+        Person person = personRepository.findByAccountUsername("member").orElseThrow();
 
         AssignRoleRequest req = new AssignRoleRequest();
         req.setPersonId(person.getId());
         req.setRole("librarian");
 
         mockMvc.perform(post("/api/person/add-role")
-                        .header("Authorization", "Bearer " + adminAccessToken)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -215,13 +261,13 @@ class PersonControllerTest {
 
     @Test
     void testAssignRoleToPerson_InvalidRole_Fail() throws Exception {
-        Person person = personRepository.findByAccountUsername("memberuser").orElseThrow();
+        Person person = personRepository.findByAccountUsername("member").orElseThrow();
         AssignRoleRequest req = new AssignRoleRequest();
         req.setPersonId(person.getId());
         req.setRole("NONEXISTENT");
 
         mockMvc.perform(post("/api/person/add-role")
-                        .header("Authorization", "Bearer " + adminAccessToken)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
@@ -230,7 +276,7 @@ class PersonControllerTest {
 
     @Test
     void testUpdateProfile() throws Exception {
-        Person person = personRepository.findByAccountUsername("memberuser").orElseThrow();
+        Person person = personRepository.findByAccountUsername("member").orElseThrow();
         PersonDTO dto = PersonDTO.builder()
                 .firstName("UpdatedMember")
                 .lastName(person.getLastName())
@@ -240,7 +286,7 @@ class PersonControllerTest {
                 .build();
 
         mockMvc.perform(put("/api/person/" + person.getId())
-                        .header("Authorization", "Bearer " + memberAccessToken)
+                        .header("Authorization", "Bearer " + memberToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
@@ -251,7 +297,7 @@ class PersonControllerTest {
 
     @Test
     void testUpdateProfile_BlankFirstName_Fail() throws Exception {
-        Person person = personRepository.findByAccountUsername("memberuser").orElseThrow();
+        Person person = personRepository.findByAccountUsername("member").orElseThrow();
         PersonDTO dto = PersonDTO.builder()
                 .firstName("") // invalid
                 .lastName(person.getLastName())
@@ -261,7 +307,7 @@ class PersonControllerTest {
                 .build();
 
         mockMvc.perform(put("/api/person/" + person.getId())
-                        .header("Authorization", "Bearer " + memberAccessToken)
+                        .header("Authorization", "Bearer " + memberToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -271,7 +317,7 @@ class PersonControllerTest {
     @Test
     void testSearchPeople() throws Exception {
         mockMvc.perform(get("/api/person/search/Member")
-                        .header("Authorization", "Bearer " + adminAccessToken))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].firstName").value("Member"));
     }
@@ -279,18 +325,18 @@ class PersonControllerTest {
     @Test
     void testSearchPeople_WithoutAdmin_Forbidden() throws Exception {
         mockMvc.perform(get("/api/person/search/any")
-                        .header("Authorization", "Bearer " + memberAccessToken))
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void testGetPersonRoles() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/person/person-roles")
-                        .header("Authorization", "Bearer " + memberAccessToken))
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String content = result.getResponse().getContentAsString();
-        assertThat(content).contains("USER", "MEMBER");
+        assertThat(content).contains("USER", "ADMIN");
     }
 }

@@ -38,10 +38,16 @@ public class PenaltyServiceImpl extends BaseServiceImpl<Penalty, Long> implement
             throw new AlreadyExistsException("Already have penalty");
         }
 
+        LocalDateTime penaltyDate = loan.getReturnDate();
+        if (penaltyDate == null) {
+            penaltyDate = LocalDateTime.now();
+        }
+
         Penalty penalty = Penalty.builder()
-                .amount(calculatePenalty(loan, loan.getReturnDate()))
+                .amount(calculatePenalty(loan, penaltyDate))
                 .reason(reason)
                 .status(PenaltyStatus.UNPAID)
+                .lastCalculatedAt(LocalDateTime.now())
                 .loan(loan).build();
 
         return persist(penalty);
@@ -119,6 +125,7 @@ public class PenaltyServiceImpl extends BaseServiceImpl<Penalty, Long> implement
         );
 
         BigDecimal dailyFine = BigDecimal.valueOf(3000);
-        return dailyFine.multiply(BigDecimal.valueOf(Math.max(overdueDays, 1)));
+        long days = Math.max(overdueDays, 1);
+        return dailyFine.multiply(BigDecimal.valueOf(days));
     }
 }

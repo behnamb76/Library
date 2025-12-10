@@ -7,6 +7,7 @@ import ir.bahman.library.service.BookService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,12 +23,14 @@ public class BookController {
         this.bookMapper = bookMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PostMapping
     public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookDTO dto) {
         Book book = bookService.persist(bookMapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(bookMapper.toDto(book));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateBook(@Valid @RequestBody BookDTO dto, @PathVariable Long id) {
         bookService.update(id, bookMapper.toEntity(dto));
@@ -39,5 +42,12 @@ public class BookController {
         List<BookDTO> books = bookService.search(keyword)
                 .stream().map(bookMapper::toDto).toList();
         return ResponseEntity.ok().body(books);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
+    @PutMapping("/{id}/tag")
+    public ResponseEntity<Void> assignTagToBook(@PathVariable Long id, @RequestParam String tag) {
+        bookService.assignTagToBook(tag, id);
+        return ResponseEntity.ok().build();
     }
 }

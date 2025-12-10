@@ -7,6 +7,7 @@ import ir.bahman.library.service.ReservationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +21,7 @@ public class ReservationController {
         this.reservationMapper = reservationMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PostMapping
     public ResponseEntity<ReservationDTO> reserveBook(@Valid @RequestBody ReservationDTO dto) {
         Reservation reservation = reservationService.reserveBook(dto.getBookId(), dto.getMemberId());
@@ -27,6 +29,7 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(reservationMapper.toDto(reservation));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateReservation(@Valid @RequestBody ReservationDTO dto, @PathVariable Long id) {
         reservationService.update(id, reservationMapper.toEntity(dto));
@@ -34,6 +37,7 @@ public class ReservationController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PutMapping("/cancel/{id}")
     public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
         reservationService.cancelReservation(id);
@@ -41,6 +45,7 @@ public class ReservationController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/reorder_queue/{id}")
     public ResponseEntity<Void> reorderQueue(@PathVariable Long id) {
         reservationService.reorderQueue(id);
@@ -48,6 +53,7 @@ public class ReservationController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/expire/{id}")
     public ResponseEntity<Void> expireReadyForPickupReservation(@PathVariable Long id) {
         reservationService.expireReadyForPickupReservation();
@@ -55,6 +61,7 @@ public class ReservationController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping("/{id}")
     public ResponseEntity<ReservationDTO> getReservation(@PathVariable Long id) {
         Reservation reservation = reservationService.findById(id);

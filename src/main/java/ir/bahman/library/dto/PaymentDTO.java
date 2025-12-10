@@ -18,4 +18,6 @@ public class PaymentDTO {
     private String method;
 
     private String paymentFor;
+
+    private Long memberId;
 }

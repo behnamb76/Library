@@ -12,10 +12,12 @@ import ir.bahman.library.model.enums.PenaltyStatus;
 import ir.bahman.library.service.PaymentService;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Service
+@Transactional
 public class PaymentServiceImpl extends BaseServiceImpl<Payment, Long> implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PenaltyRepository penaltyRepository;
@@ -41,12 +43,16 @@ public class PaymentServiceImpl extends BaseServiceImpl<Payment, Long> implement
                 .method(method)
                 .paymentFor(PaymentFor.PENALTY)
                 .member(penalty.getLoan().getMember())
-                .penalty(penalty)
                 .build();
 
+        Payment savedPayment = persist(payment);
+
+        penalty.setPayment(savedPayment);
         penalty.setStatus(PenaltyStatus.PAID);
 
-        return persist(payment);
+        penaltyRepository.save(penalty);
+
+        return savedPayment;
     }
 
     @Override

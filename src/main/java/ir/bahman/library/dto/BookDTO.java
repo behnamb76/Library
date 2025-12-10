@@ -39,10 +39,10 @@ public class BookDTO {
     @Positive(message = "Edition must be a positive number")
     private Integer edition;
 
+    @Positive(message = "Replacement cost must be a positive number")
+    private BigDecimal replacementCost;
+
     @NotBlank(message = "Category is required")
     @Size(max = 50, message = "Category name must not exceed 50 characters")
     private String categoryName;
-
-    @Positive(message = "Replacement cost must be a positive number")
-    private BigDecimal replacementCost;
 }

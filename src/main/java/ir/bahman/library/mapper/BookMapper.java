@@ -30,9 +30,9 @@ public abstract class BookMapper implements BaseMapper<Book, BookDTO> {
 
     @AfterMapping
     protected void afterToDto(Book book, @MappingTarget BookDTO dto) {
-        if (book.getCategory().getName() != null) {
-            Category category = categoryRepository.findByNameIgnoreCase(dto.getCategoryName())
-                    .orElseThrow(() -> new EntityNotFoundException("Category with name " + dto.getCategoryName() + " not found"));
+        if (book.getCategory() != null) {
+            Category category = categoryRepository.findByNameIgnoreCase(book.getCategory().getName())
+                    .orElseThrow(() -> new EntityNotFoundException("Category with name " + book.getCategory().getName() + " not found"));
             dto.setCategoryName(category.getName());
         }
     }

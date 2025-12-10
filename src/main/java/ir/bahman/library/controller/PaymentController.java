@@ -8,6 +8,7 @@ import ir.bahman.library.model.enums.PaymentMethod;
 import ir.bahman.library.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,18 +22,21 @@ public class PaymentController {
         this.paymentMapper = paymentMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PostMapping
     public ResponseEntity<PaymentDTO> payPenalty(@Valid @RequestBody PayPenaltyRequest request) {
         Payment payment = paymentService.payPenalty(request.getPenaltyId(), PaymentMethod.fromString(request.getMethod()));
         return ResponseEntity.ok().body(paymentMapper.toDto(payment));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updatePayment(@PathVariable Long id, @RequestBody PaymentDTO dto) {
         paymentService.update(id, paymentMapper.toEntity(dto));
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @GetMapping("/{id}")
     public ResponseEntity<PaymentDTO> getPayment(@PathVariable Long id) {
         Payment payment = paymentService.findById(id);

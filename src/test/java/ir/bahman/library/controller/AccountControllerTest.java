@@ -10,19 +10,23 @@ import ir.bahman.library.dto.LoginRequest;
 import ir.bahman.library.dto.RegisterRequest;
 import ir.bahman.library.model.Account;
 import ir.bahman.library.model.Person;
+import ir.bahman.library.model.Role;
 import ir.bahman.library.model.enums.AccountStatus;
 import ir.bahman.library.security.JwtService;
 import ir.bahman.library.service.AuthService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +58,7 @@ class AccountControllerTest {
     private RoleRepository roleRepository;
 
     @Autowired
-    private JwtService jwtService;
+    private PasswordEncoder passwordEncoder;
 
     private String adminToken;
     private String memberToken;
@@ -62,33 +66,67 @@ class AccountControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        RegisterRequest memberReq = RegisterRequest.builder()
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
+        Role userRole = roleRepository.findByName("USER").orElseThrow();
+        Role memberRole = roleRepository.findByName("MEMBER").orElseThrow();
+
+        Person admin = Person.builder()
+                .firstName("Admin")
+                .lastName("User")
+                .nationalCode("1234567890")
+                .phoneNumber("09123456789")
+                .birthday(LocalDate.of(1980, 1, 1))
+                .roles(List.of(adminRole, userRole))
+                .deleted(false)
+                .build();
+        admin = personRepository.save(admin);
+
+        Account adminAccount = Account.builder()
+                .username("admin1")
+                .password(passwordEncoder.encode("admin1"))
+                .status(AccountStatus.ACTIVE)
+                .person(admin)
+                .activeRole(adminRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(adminAccount);
+
+        Person member = Person.builder()
                 .firstName("Member")
                 .lastName("User")
                 .nationalCode("0987654321")
                 .phoneNumber("09876543210")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .username("member")
-                .password("Pass1234")
+                .roles(List.of(userRole, memberRole))
+                .deleted(false)
                 .build();
+        member = personRepository.save(member);
+        memberId = member.getId();
 
-        mockMvc.perform(post("/api/person/member-register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(memberReq)))
-                .andExpect(status().isCreated());
+        Account memberAccount = Account.builder()
+                .username("member")
+                .password(passwordEncoder.encode("Pass1234"))
+                .status(AccountStatus.PENDING)
+                .person(member)
+                .activeRole(userRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(memberAccount);
 
-        Account memberAccount = accountRepository.findByUsername("member").orElseThrow();
         memberAccount.setStatus(AccountStatus.ACTIVE);
         accountRepository.save(memberAccount);
 
-        Person member = personRepository.findByAccountUsername("member").orElseThrow();
-        memberId = member.getId();
-
-        Map<String, String> adminTokens = authService.login(new LoginRequest("admin", "admin"));
-        adminToken = adminTokens.get("accessToken");
+        Map<String, String> adminTokens = authService.login(new LoginRequest("admin1", "admin1"));
+        this.adminToken = adminTokens.get("accessToken");
 
         Map<String, String> memberTokens = authService.login(new LoginRequest("member", "Pass1234"));
-        memberToken = memberTokens.get("accessToken");
+        this.memberToken = memberTokens.get("accessToken");
+    }
+
+    @AfterEach
+    void tearDown(){
+        accountRepository.deleteAll();
+        personRepository.deleteAll();
     }
 
     @Test

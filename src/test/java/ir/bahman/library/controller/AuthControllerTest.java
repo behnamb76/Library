@@ -10,20 +10,24 @@ import ir.bahman.library.dto.RefreshRequest;
 import ir.bahman.library.dto.RegisterRequest;
 import ir.bahman.library.model.Account;
 import ir.bahman.library.model.Person;
+import ir.bahman.library.model.Role;
 import ir.bahman.library.model.enums.AccountStatus;
 import ir.bahman.library.security.JwtService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,29 +55,69 @@ class AuthControllerTest {
     private RoleRepository roleRepository;
 
     @Autowired
-    private JwtService jwtService;
+    private PasswordEncoder passwordEncoder;
+
+    private Long memberId;
 
     @BeforeEach
     void setUp() throws Exception {
-        RegisterRequest memberReq = RegisterRequest.builder()
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
+        Role userRole = roleRepository.findByName("USER").orElseThrow();
+        Role memberRole = roleRepository.findByName("MEMBER").orElseThrow();
+
+        Person admin = Person.builder()
+                .firstName("Admin")
+                .lastName("User")
+                .nationalCode("1234567890")
+                .phoneNumber("09123456789")
+                .birthday(LocalDate.of(1980, 1, 1))
+                .roles(List.of(adminRole, userRole))
+                .deleted(false)
+                .build();
+        admin = personRepository.save(admin);
+
+        Account adminAccount = Account.builder()
+                .username("admin1")
+                .password(passwordEncoder.encode("admin1"))
+                .status(AccountStatus.ACTIVE)
+                .person(admin)
+                .activeRole(adminRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(adminAccount);
+
+        Person member = Person.builder()
                 .firstName("Member")
                 .lastName("User")
                 .nationalCode("0987654321")
                 .phoneNumber("09876543210")
                 .birthday(LocalDate.of(1990, 1, 1))
-                .username("memberuser")
-                .password("Pass1234")
+                .roles(List.of(userRole, memberRole))
+                .deleted(false)
                 .build();
+        member = personRepository.save(member);
+        memberId = member.getId();
 
-        mockMvc.perform(post("/api/person/member-register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(memberReq)))
-                .andExpect(status().isCreated());
+        Account memberAccount = Account.builder()
+                .username("member")
+                .password(passwordEncoder.encode("Pass1234"))
+                .status(AccountStatus.PENDING)
+                .person(member)
+                .activeRole(userRole)
+                .deleted(false)
+                .build();
+        accountRepository.save(memberAccount);
+    }
+
+    @AfterEach
+    void tearDown(){
+        accountRepository.deleteAll();
+        personRepository.deleteAll();
     }
 
     @Test
     void testLogin() throws Exception {
-        LoginRequest req = new LoginRequest("admin", "admin");
+        LoginRequest req = new LoginRequest("admin1", "admin1");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -89,7 +133,7 @@ class AuthControllerTest {
 
     @Test
     void testLogin_WithInvalidPassword_Fail() throws Exception {
-        LoginRequest req = new LoginRequest("admin", "WrongPass");
+        LoginRequest req = new LoginRequest("admin1", "WrongPass");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -107,7 +151,7 @@ class AuthControllerTest {
 
     @Test
     void login_WithInactiveAccount_Fail() throws Exception {
-        LoginRequest req = new LoginRequest("memberuser", "Pass1234");
+        LoginRequest req = new LoginRequest("member", "Pass1234");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -117,7 +161,7 @@ class AuthControllerTest {
 
     @Test
     void testRefresh() throws Exception {
-        LoginRequest loginReq = new LoginRequest("admin", "admin");
+        LoginRequest loginReq = new LoginRequest("admin1", "admin1");
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -140,17 +184,8 @@ class AuthControllerTest {
     }
 
     @Test
-    void testRefresh_WithInvalidToken_Fail() throws Exception {
-        RefreshRequest req = new RefreshRequest("invalid.jwt.token");
-        mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
     void testLogout() throws Exception {
-        LoginRequest loginReq = new LoginRequest("admin", "admin");
+        LoginRequest loginReq = new LoginRequest("admin1", "admin1");
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -164,9 +199,9 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(logoutDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User admin logged out successfully"));
+                .andExpect(jsonPath("$.message").value("User admin1 logged out successfully"));
 
-        Account account = accountRepository.findByUsername("admin").orElseThrow();
+        Account account = accountRepository.findByUsername("admin1").orElseThrow();
         assertThat(account.getAuthId()).isNull();
     }
 

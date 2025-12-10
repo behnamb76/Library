@@ -16,11 +16,13 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
 public class ReservationServiceImpl extends BaseServiceImpl<Reservation, Long> implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final PersonRepository personRepository;
@@ -37,11 +39,11 @@ public class ReservationServiceImpl extends BaseServiceImpl<Reservation, Long> i
 
     @Override
     public Reservation reserveBook(Long bookId, Long memberId) {
-        if (reservationRepository.existsByBookId(bookId)) {
+        if (reservationRepository.existsActiveReservation(memberId, bookId)) {
             throw new AlreadyExistsException("You already have a reservation on this book");
         }
 
-        if (reservationRepository.existsByBookIdAndLoanIsContaining(bookId)) {
+        if (reservationRepository.userHasLoanedBook(memberId, bookId)) {
             throw new AlreadyExistsException("You already have this book on loan");
         }
 

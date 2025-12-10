@@ -44,7 +44,7 @@ public class Book extends BaseEntity<Long> {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "book_tags",
             joinColumns = @JoinColumn(name = "book_id"),

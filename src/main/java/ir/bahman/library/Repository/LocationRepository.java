@@ -6,12 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface LocationRepository extends JpaRepository<Location, Long> {
     boolean existsBySectionAndShelfAndRow(String section, String shelf, Integer row);
 
     @Query("""
-        select l
+        select count(l) > 0
         from Location l
         where l.section = :section
           and l.shelf = :shelf
@@ -25,4 +27,6 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
             @Param("row") Integer row,
             @Param("id") Long id
     );
+
+    Optional<Location> findBySectionAndShelfAndRow(String section, String shelf, int row);
 }

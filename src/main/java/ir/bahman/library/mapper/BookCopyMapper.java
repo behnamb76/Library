@@ -10,16 +10,15 @@ import ir.bahman.library.model.Location;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(componentModel = "spring")
-public abstract class BookCopyMapper {
-    private final LocationRepository locationRepository;
-    private final BookRepository bookRepository;
+public abstract class BookCopyMapper implements BaseMapper<BookCopy, BookCopyDTO> {
+    @Autowired
+    private LocationRepository locationRepository;
 
-    protected BookCopyMapper(LocationRepository locationRepository, BookRepository bookRepository) {
-        this.locationRepository = locationRepository;
-        this.bookRepository = bookRepository;
-    }
+    @Autowired
+    private BookRepository bookRepository;
 
     public abstract BookCopy toEntity(BookCopyDTO dto);
 
@@ -28,7 +27,9 @@ public abstract class BookCopyMapper {
     @AfterMapping
     protected void afterToDto(BookCopy bookCopy, @MappingTarget BookCopyDTO dto) {
         dto.setBookId(bookCopy.getBook().getId());
-        dto.setLocationId(bookCopy.getLocation().getId());
+        if (bookCopy.getLocation() != null){
+            dto.setLocationId(bookCopy.getLocation().getId());
+        }
     }
 
     @AfterMapping

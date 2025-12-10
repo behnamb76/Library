@@ -34,4 +34,6 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     List<Loan> findAllOverdueLoans();
 
     Optional<Loan> findTopByBookCopyIdOrderByReturnDateDesc(Long bookCopyId);
+
+    Optional<Loan> findByBookCopyIdOrderByLoanDateDesc(Long bookCopyId);
 }

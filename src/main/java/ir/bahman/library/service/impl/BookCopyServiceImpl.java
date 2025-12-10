@@ -46,7 +46,7 @@ public class BookCopyServiceImpl extends BaseServiceImpl<BookCopy, Long> impleme
 
     @Override
     public List<BookCopy> findReturnedPendingCheckCopies() {
-        return bookCopyRepository.findAllByStatus_ReturnedPendingCheck();
+        return bookCopyRepository.findAllByStatus(BookCopyStatus.RETURNED_PENDING_CHECK);
     }
 
     @Override

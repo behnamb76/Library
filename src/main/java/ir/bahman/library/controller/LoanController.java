@@ -9,6 +9,7 @@ import ir.bahman.library.model.Loan;
 import ir.bahman.library.service.LoanService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -27,36 +28,42 @@ public class LoanController {
         this.loanUpdateMapper = loanUpdateMapper;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PostMapping("/borrow-book")
     public ResponseEntity<LoanResponseDTO> borrowBook(@Valid @RequestBody BorrowBookRequest request) {
         Loan loan = loanService.borrowBook(request.getMemberId(), request.getBookCopyId());
         return ResponseEntity.ok().body(loanMapper.toDto(loan));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateLoan(@PathVariable Long id, @Valid @RequestBody LoanUpdateRequest loanUpdateRequest) {
         loanService.update(id, loanUpdateMapper.toEntity(loanUpdateRequest));
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PutMapping("/return-book/{id}")
     public ResponseEntity<Void> returnBook(@PathVariable Long id) {
         loanService.returnBook(id);
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @PutMapping("/check-loans")
     public ResponseEntity<Void> checkOverdueLoans() {
         loanService.checkOverdueLoans();
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping("/{id}")
     public ResponseEntity<LoanResponseDTO> getLoan(@PathVariable Long id) {
         Loan loan = loanService.findById(id);
         return ResponseEntity.ok().body(loanMapper.toDto(loan));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
     @GetMapping
     public ResponseEntity<List<LoanResponseDTO>> getAllLoans() {
         List<LoanResponseDTO> dtoList = loanService.findAll()

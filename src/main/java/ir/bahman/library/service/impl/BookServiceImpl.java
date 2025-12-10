@@ -50,20 +50,23 @@ public class BookServiceImpl extends BaseServiceImpl<Book, Long> implements Book
         existing.setPublicationYear(book.getPublicationYear());
         existing.setDescription(book.getDescription());
         existing.setEdition(book.getEdition());
-        existing.setTags(book.getTags());
+        existing.setReplacementCost(book.getReplacementCost());
 
         return bookRepository.save(existing);
     }
 
     @Override
-    public void assignTagToBook(String tag, Long bookId) {
-        Tag founded = tagRepository.findByName(tag.toUpperCase())
-                .orElseThrow(() -> new EntityNotFoundException("Tag not found!"));
+    public void assignTagToBook(String tagName, Long bookId) {
+        Tag tag = tagRepository.findByName(tagName.toUpperCase())
+                .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName.toUpperCase()).build()));
 
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Book not found!"));
-        book.getTags().add(founded);
-        bookRepository.save(book);
+
+        if (!book.getTags().contains(tag)) {
+            book.getTags().add(tag);
+            bookRepository.save(book);
+        }
     }
 
     @Override
