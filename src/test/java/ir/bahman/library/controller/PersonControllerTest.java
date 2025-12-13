@@ -296,10 +296,29 @@ class PersonControllerTest {
     }
 
     @Test
+    void testUpdateProfile_UpdatingOtherPerson_Fail() throws Exception {
+        Person victim = personRepository.findByAccountUsername("admin1").orElseThrow();
+
+        PersonDTO dto = PersonDTO.builder()
+                .firstName("HackedName")
+                .lastName("HackedLast")
+                .nationalCode("0000000000")
+                .phoneNumber("09000000000")
+                .birthday(LocalDate.now().minusYears(20))
+                .build();
+
+        mockMvc.perform(put("/api/person/" + victim.getId())
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void testUpdateProfile_BlankFirstName_Fail() throws Exception {
         Person person = personRepository.findByAccountUsername("member").orElseThrow();
         PersonDTO dto = PersonDTO.builder()
-                .firstName("") // invalid
+                .firstName("")
                 .lastName(person.getLastName())
                 .nationalCode(person.getNationalCode())
                 .phoneNumber(person.getPhoneNumber())

@@ -15,4 +15,6 @@ public interface PersonService extends BaseService<Person, Long> {
     List<Person> search(String keyword);
 
     List<Role> getPersonRoles(Principal principal);
+
+    Person findByUsername(String username);
 }

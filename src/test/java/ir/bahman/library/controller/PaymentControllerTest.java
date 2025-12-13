@@ -139,7 +139,7 @@ class PaymentControllerTest {
                 .loan(loan)
                 .reason(PenaltyReason.OVERDUE)
                 .status(PenaltyStatus.UNPAID)
-                .amount(BigDecimal.valueOf(18000)) // 6 days × 3000
+                .amount(BigDecimal.valueOf(18000))
                 .lastCalculatedAt(LocalDateTime.now())
                 .deleted(false)
                 .build();

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BookCopyServiceImpl extends BaseServiceImpl<BookCopy, Long> implements BookCopyService {
@@ -165,8 +166,7 @@ public class BookCopyServiceImpl extends BaseServiceImpl<BookCopy, Long> impleme
     }
 
     private String generateBarcode(Long bookId) {
-        String timestamp = String.valueOf(System.currentTimeMillis());
-        return "BC-" + bookId + "-" + timestamp;
+        return "BC-" + bookId + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     private BigDecimal calculateDamageFee(BookCopy copy) {

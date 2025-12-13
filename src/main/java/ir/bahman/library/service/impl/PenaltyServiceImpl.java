@@ -9,6 +9,7 @@ import ir.bahman.library.model.Penalty;
 import ir.bahman.library.model.enums.PenaltyReason;
 import ir.bahman.library.model.enums.PenaltyStatus;
 import ir.bahman.library.service.PenaltyService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,9 @@ import java.util.List;
 public class PenaltyServiceImpl extends BaseServiceImpl<Penalty, Long> implements PenaltyService {
     private final PenaltyRepository penaltyRepository;
     private final LoanRepository loanRepository;
+
+    @Value("${library.penalty.daily-fee:3000}")
+    private int penaltyDailyFee;
 
     public PenaltyServiceImpl(JpaRepository<Penalty, Long> repository, PenaltyRepository penaltyRepository, LoanRepository loanRepository) {
         super(repository);
@@ -88,7 +92,7 @@ public class PenaltyServiceImpl extends BaseServiceImpl<Penalty, Long> implement
                 continue;
             }
 
-            penalty.setAmount(penalty.getAmount().add(BigDecimal.valueOf(3000)));
+            penalty.setAmount(penalty.getAmount().add(BigDecimal.valueOf(penaltyDailyFee)));
             penalty.setLastCalculatedAt(today);
         }
     }
@@ -124,7 +128,7 @@ public class PenaltyServiceImpl extends BaseServiceImpl<Penalty, Long> implement
                 overdueDate
         );
 
-        BigDecimal dailyFine = BigDecimal.valueOf(3000);
+        BigDecimal dailyFine = BigDecimal.valueOf(penaltyDailyFee);
         long days = Math.max(overdueDays, 1);
         return dailyFine.multiply(BigDecimal.valueOf(days));
     }

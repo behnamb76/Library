@@ -5,6 +5,7 @@ import ir.bahman.library.model.Penalty;
 import ir.bahman.library.model.enums.PenaltyReason;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.io.Serializable;
@@ -31,4 +32,15 @@ public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
     Optional<Penalty> findByLoanAndReason(Loan loan, PenaltyReason reason);
 
     List<Penalty> findByLoan_Member_Id(Long loanMemberId);
+
+    @Query("""
+        SELECT COUNT(p) > 0
+        FROM Penalty p
+        JOIN p.loan l
+        JOIN l.member m
+        WHERE m.id = :memberId
+          AND p.status = 'UNPAID'
+          AND p.deleted = false
+    """)
+    boolean existsUnpaidPenaltyByMember(@Param("memberId") Long memberId);
 }

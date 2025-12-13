@@ -3,6 +3,7 @@ package ir.bahman.library.controller;
 import ir.bahman.library.dto.BorrowBookRequest;
 import ir.bahman.library.dto.LoanResponseDTO;
 import ir.bahman.library.dto.LoanUpdateRequest;
+import ir.bahman.library.dto.ReturnBookRequest;
 import ir.bahman.library.mapper.LoanMapper;
 import ir.bahman.library.mapper.LoanUpdateMapper;
 import ir.bahman.library.model.Loan;
@@ -42,10 +43,10 @@ public class LoanController {
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
-    @PutMapping("/return-book/{id}")
-    public ResponseEntity<Void> returnBook(@PathVariable Long id) {
-        loanService.returnBook(id);
+    @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN')")
+    @PutMapping("/return-book")
+    public ResponseEntity<Void> returnBook(@Valid @RequestBody ReturnBookRequest request) {
+        loanService.returnBook(request.getLoanId(), request.getMemberId(), request.getBookCopyId());
         return ResponseEntity.ok().build();
     }
 

@@ -1,12 +1,7 @@
 package ir.bahman.library.service.impl;
 
-import ir.bahman.library.Repository.BookCopyRepository;
-import ir.bahman.library.Repository.LoanRepository;
-import ir.bahman.library.Repository.PersonRepository;
-import ir.bahman.library.Repository.ReservationRepository;
-import ir.bahman.library.exception.AlreadyExistsException;
-import ir.bahman.library.exception.EntityNotFoundException;
-import ir.bahman.library.exception.NotAvailableException;
+import ir.bahman.library.Repository.*;
+import ir.bahman.library.exception.*;
 import ir.bahman.library.model.BookCopy;
 import ir.bahman.library.model.Loan;
 import ir.bahman.library.model.Person;
@@ -17,6 +12,7 @@ import ir.bahman.library.model.enums.PenaltyReason;
 import ir.bahman.library.model.enums.ReservationStatus;
 import ir.bahman.library.service.LoanService;
 import ir.bahman.library.service.PenaltyService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -33,18 +29,29 @@ public class LoanServiceImpl extends BaseServiceImpl<Loan, Long> implements Loan
     private final ReservationRepository reservationRepository;
     private final PersonRepository personRepository;
     private final PenaltyService penaltyService;
+    private final PenaltyRepository penaltyRepository;
 
-    public LoanServiceImpl(JpaRepository<Loan, Long> repository, LoanRepository loanRepository, BookCopyRepository bookCopyRepository, ReservationRepository reservationRepository, PersonRepository personRepository, PenaltyService penaltyService) {
+    @Value("${library.loan.duration-days:14}")
+    private int loanDurationDays;
+
+    public LoanServiceImpl(JpaRepository<Loan, Long> repository, LoanRepository loanRepository, BookCopyRepository bookCopyRepository, ReservationRepository reservationRepository, PersonRepository personRepository, PenaltyService penaltyService, PenaltyRepository penaltyRepository) {
         super(repository);
         this.loanRepository = loanRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.reservationRepository = reservationRepository;
         this.personRepository = personRepository;
         this.penaltyService = penaltyService;
+        this.penaltyRepository = penaltyRepository;
     }
 
     @Override
     public Loan borrowBook(Long memberId, Long copyId) {
+        boolean hasPenalties = penaltyRepository.existsUnpaidPenaltyByMember(memberId);
+
+        if (hasPenalties) {
+            throw new AccessDeniedException("Access Denied: You have outstanding unpaid penalties.");
+        }
+
         BookCopy bookCopy = bookCopyRepository.findById(copyId)
                 .orElseThrow(() -> new EntityNotFoundException("Copy not found!"));
 
@@ -72,7 +79,7 @@ public class LoanServiceImpl extends BaseServiceImpl<Loan, Long> implements Loan
 
         Loan loan = Loan.builder()
                 .loanDate(LocalDateTime.now())
-                .dueDate(LocalDateTime.now().plusDays(14))
+                .dueDate(LocalDateTime.now().plusDays(loanDurationDays))
                 .status(LoanStatus.ACTIVE)
                 .member(member)
                 .bookCopy(bookCopy).build();
@@ -85,14 +92,22 @@ public class LoanServiceImpl extends BaseServiceImpl<Loan, Long> implements Loan
     }
 
     @Override
-    public void returnBook(Long loanId) {
+    public void returnBook(Long loanId, Long memberId, Long bookCopyId) {
         penaltyService.freezePenaltyForLoan(loanId);
 
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException("Loan not found!"));
 
+        if (!loan.getMember().getId().equals(memberId)) {
+            throw new BadRequestException("This loan belongs to another member");
+        }
+
+        if (!loan.getBookCopy().getId().equals(bookCopyId)) {
+            throw new BadRequestException("This loan is for another Book Copy");
+        }
+
         if (loan.getReturnDate() != null) {
-            throw new AlreadyExistsException("Already returned");
+            throw new AlreadyExistsException("This book has already been returned.");
         }
 
         loan.setReturnDate(LocalDateTime.now());

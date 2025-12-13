@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
+
 @RestController
 @RequestMapping("/api/payment")
 public class PaymentController {
@@ -24,8 +26,8 @@ public class PaymentController {
 
     @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER')")
     @PostMapping
-    public ResponseEntity<PaymentDTO> payPenalty(@Valid @RequestBody PayPenaltyRequest request) {
-        Payment payment = paymentService.payPenalty(request.getPenaltyId(), PaymentMethod.fromString(request.getMethod()));
+    public ResponseEntity<PaymentDTO> payPenalty(@Valid @RequestBody PayPenaltyRequest request, Principal principal) {
+        Payment payment = paymentService.payPenalty(request.getPenaltyId(), PaymentMethod.fromString(request.getMethod()), principal.getName());
         return ResponseEntity.ok().body(paymentMapper.toDto(payment));
     }
 

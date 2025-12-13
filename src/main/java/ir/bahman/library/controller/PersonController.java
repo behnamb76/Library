@@ -3,10 +3,12 @@ package ir.bahman.library.controller;
 import ir.bahman.library.dto.AssignRoleRequest;
 import ir.bahman.library.dto.PersonDTO;
 import ir.bahman.library.dto.RegisterRequest;
+import ir.bahman.library.exception.AccessDeniedException;
 import ir.bahman.library.mapper.PersonMapper;
 import ir.bahman.library.model.Person;
 import ir.bahman.library.model.Role;
 import ir.bahman.library.service.PersonService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,7 +53,17 @@ public class PersonController {
 
     @PreAuthorize("hasAnyRole('ADMIN','LIBRARIAN','MEMBER','USER')")
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateProfile(@Valid @RequestBody PersonDTO dto, @PathVariable Long id) {
+    public ResponseEntity<Void> updateProfile(@Valid @RequestBody PersonDTO dto, @PathVariable Long id, Principal principal, HttpServletRequest request) {
+        boolean isStaff = request.isUserInRole("ADMIN") || request.isUserInRole("LIBRARIAN");
+
+        if (!isStaff) {
+            Person currentPerson = personService.findByUsername(principal.getName());
+
+            if (!currentPerson.getId().equals(id)) {
+                throw new AccessDeniedException("You can only update your own profile.");
+            }
+        }
+
         personService.update(id, personMapper.toEntity(dto));
         return ResponseEntity.ok().build();
     }

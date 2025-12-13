@@ -2,10 +2,13 @@ package ir.bahman.library.service.impl;
 
 import ir.bahman.library.Repository.PaymentRepository;
 import ir.bahman.library.Repository.PenaltyRepository;
+import ir.bahman.library.Repository.PersonRepository;
+import ir.bahman.library.exception.AccessDeniedException;
 import ir.bahman.library.exception.AlreadyExistsException;
 import ir.bahman.library.exception.EntityNotFoundException;
 import ir.bahman.library.model.Payment;
 import ir.bahman.library.model.Penalty;
+import ir.bahman.library.model.Person;
 import ir.bahman.library.model.enums.PaymentFor;
 import ir.bahman.library.model.enums.PaymentMethod;
 import ir.bahman.library.model.enums.PenaltyStatus;
@@ -21,17 +24,30 @@ import java.time.LocalDateTime;
 public class PaymentServiceImpl extends BaseServiceImpl<Payment, Long> implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PenaltyRepository penaltyRepository;
+    private final PersonRepository personRepository;
 
-    public PaymentServiceImpl(JpaRepository<Payment, Long> repository, PaymentRepository paymentRepository, PenaltyRepository penaltyRepository) {
+    public PaymentServiceImpl(JpaRepository<Payment, Long> repository, PaymentRepository paymentRepository, PenaltyRepository penaltyRepository, PersonRepository personRepository) {
         super(repository);
         this.paymentRepository = paymentRepository;
         this.penaltyRepository = penaltyRepository;
+        this.personRepository = personRepository;
     }
 
     @Override
-    public Payment payPenalty(Long penaltyId, PaymentMethod method) {
+    public Payment payPenalty(Long penaltyId, PaymentMethod method, String username) {
         Penalty penalty = penaltyRepository.findById(penaltyId)
                 .orElseThrow(() -> new EntityNotFoundException("Penalty not found!"));
+
+        Person requester = personRepository.findByAccountUsername(username)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Person not found!"));
+
+        boolean isOwner = penalty.getLoan().getMember().getId().equals(requester.getId());
+        boolean isStaff = requester.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ADMIN") || r.getName().equals("LIBRARIAN"));
+
+        if (!isOwner && !isStaff) {
+            throw new AccessDeniedException("This penalty does not belong to you.");
+        }
 
         if (penalty.getStatus() == PenaltyStatus.PAID) {
             throw new AlreadyExistsException("Penalty already paid");

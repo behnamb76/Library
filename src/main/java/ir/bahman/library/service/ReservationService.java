@@ -5,7 +5,7 @@ import ir.bahman.library.model.Reservation;
 public interface ReservationService extends BaseService<Reservation, Long> {
     Reservation reserveBook(Long bookId, Long memberId);
 
-    void cancelReservation(Long id);
+    void cancelReservation(Long id, String username);
 
     void reorderQueue(Long bookId);
 

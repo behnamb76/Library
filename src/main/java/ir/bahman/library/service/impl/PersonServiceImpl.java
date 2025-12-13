@@ -121,7 +121,13 @@ public class PersonServiceImpl extends BaseServiceImpl<Person, Long> implements 
     public List<Role> getPersonRoles(Principal principal) {
         String username = principal.getName();
         Person person= personRepository.findByAccountUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Person not found!"));
         return person.getRoles();
+    }
+
+    @Override
+    public Person findByUsername(String username) {
+        return personRepository.findByAccountUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found!"));
     }
 }

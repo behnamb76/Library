@@ -5,6 +5,7 @@ import ir.bahman.library.Repository.*;
 import ir.bahman.library.dto.BorrowBookRequest;
 import ir.bahman.library.dto.LoanUpdateRequest;
 import ir.bahman.library.dto.LoginRequest;
+import ir.bahman.library.dto.ReturnBookRequest;
 import ir.bahman.library.model.*;
 import ir.bahman.library.model.enums.*;
 import ir.bahman.library.security.JwtService;
@@ -221,8 +222,15 @@ class LoanControllerTest {
 
         Loan loan = loanRepository.findByBookCopyIdOrderByLoanDateDesc(bookCopyId).orElseThrow();
 
-        mockMvc.perform(put("/api/loan/return-book/" + loan.getId())
-                        .header("Authorization", "Bearer " + memberToken))
+        ReturnBookRequest returnReq = ReturnBookRequest.builder()
+                .loanId(loan.getId())
+                .memberId(memberId)
+                .bookCopyId(bookCopyId).build();
+
+        mockMvc.perform(put("/api/loan/return-book")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(returnReq)))
                 .andExpect(status().isOk());
 
         BookCopy updated = bookCopyRepository.findById(bookCopyId).orElseThrow();
@@ -246,8 +254,15 @@ class LoanControllerTest {
         loan.setDueDate(LocalDateTime.now().minusDays(2));
         loanRepository.save(loan);
 
-        mockMvc.perform(put("/api/loan/return-book/" + loan.getId())
-                        .header("Authorization", "Bearer " + memberToken))
+        ReturnBookRequest returnReq = ReturnBookRequest.builder()
+                .loanId(loan.getId())
+                .memberId(memberId)
+                .bookCopyId(bookCopyId).build();
+
+        mockMvc.perform(put("/api/loan/return-book")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(returnReq)))
                 .andExpect(status().isOk());
 
         assertThat(penaltyRepository.existsByLoan_Id(loan.getId())).isTrue();

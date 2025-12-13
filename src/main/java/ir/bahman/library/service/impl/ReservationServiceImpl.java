@@ -4,6 +4,7 @@ import ir.bahman.library.Repository.BookCopyRepository;
 import ir.bahman.library.Repository.BookRepository;
 import ir.bahman.library.Repository.PersonRepository;
 import ir.bahman.library.Repository.ReservationRepository;
+import ir.bahman.library.exception.AccessDeniedException;
 import ir.bahman.library.exception.AlreadyExistsException;
 import ir.bahman.library.model.Book;
 import ir.bahman.library.model.BookCopy;
@@ -66,13 +67,23 @@ public class ReservationServiceImpl extends BaseServiceImpl<Reservation, Long> i
     }
 
     @Override
-    public void cancelReservation(Long id) {
+    public void cancelReservation(Long id, String username) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Reservation not found!"));
 
+        Person requester = personRepository.findByAccountUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found!"));
+
+        boolean isOwner = reservation.getMember().getId().equals(requester.getId());
+        boolean isStaff = requester.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ADMIN") || r.getName().equals("LIBRARIAN"));
+
+        if (!isOwner && !isStaff) {
+            throw new AccessDeniedException("You cannot cancel someone else's reservation.");
+        }
+
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setQueuePosition(null);
-
         update(id, reservation);
     }
 

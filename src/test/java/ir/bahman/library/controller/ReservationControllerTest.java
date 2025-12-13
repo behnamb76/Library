@@ -189,14 +189,8 @@ class ReservationControllerTest {
 
     @Test
     void testReserveBook() throws Exception {
-        ReservationDTO dto = new ReservationDTO();
-        dto.setBookId(bookId);
-        dto.setMemberId(memberId);
-
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.queuePosition").value(1));
 
@@ -207,19 +201,12 @@ class ReservationControllerTest {
 
     @Test
     void testReserveBook_WhenAlreadyReserved_Fail() throws Exception {
-        ReservationDTO dto1 = new ReservationDTO();
-        dto1.setBookId(bookId);
-        dto1.setMemberId(memberId);
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto1)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto1)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("You already have a reservation on this book"));
     }
@@ -236,27 +223,16 @@ class ReservationControllerTest {
                 .build();
         loanRepository.save(loan);
 
-        ReservationDTO dto = new ReservationDTO();
-        dto.setBookId(bookId);
-        dto.setMemberId(memberId);
-
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("You already have this book on loan"));
     }
 
     @Test
     void testCancelReservation() throws Exception {
-        ReservationDTO dto = new ReservationDTO();
-        dto.setBookId(bookId);
-        dto.setMemberId(memberId);
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated());
 
         Reservation reservation = reservationRepository.findByBook_IdAndStatusOrderByQueuePositionAsc(bookId, ReservationStatus.ACTIVE).get(0);
@@ -291,22 +267,12 @@ class ReservationControllerTest {
         accountRepository.save(acc2);
         Map<String, String> tok2 = authService.login(new LoginRequest("member2", "Pass1234"));
 
-        ReservationDTO dto1 = new ReservationDTO();
-        dto1.setBookId(bookId);
-        dto1.setMemberId(memberId);
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto1)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated());
 
-        ReservationDTO dto2 = new ReservationDTO();
-        dto2.setBookId(bookId);
-        dto2.setMemberId(member2.getId());
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + tok2.get("accessToken"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto2)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + member2.getId())
+                        .header("Authorization", "Bearer " + tok2.get("accessToken")))
                 .andExpect(status().isCreated());
 
         List<Reservation> reservations = reservationRepository.findByBook_IdAndStatusOrderByQueuePositionAsc(bookId, ReservationStatus.ACTIVE);
@@ -350,13 +316,8 @@ class ReservationControllerTest {
 
     @Test
     void testGetReservation() throws Exception {
-        ReservationDTO dto = new ReservationDTO();
-        dto.setBookId(bookId);
-        dto.setMemberId(memberId);
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated());
 
         Reservation reservation = reservationRepository.findByBook_IdAndStatusOrderByQueuePositionAsc(bookId, ReservationStatus.ACTIVE).get(0);
@@ -370,13 +331,8 @@ class ReservationControllerTest {
 
     @Test
     void testUpdateReservation_ByNonLibrarian_Fail() throws Exception {
-        ReservationDTO dto = new ReservationDTO();
-        dto.setBookId(bookId);
-        dto.setMemberId(memberId);
-        mockMvc.perform(post("/api/reservation")
-                        .header("Authorization", "Bearer " + memberToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/reservation/reserve-book/" + bookId + "?memberId=" + memberId)
+                        .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isCreated());
 
         Reservation reservation = reservationRepository.findByBook_IdAndStatusOrderByQueuePositionAsc(bookId, ReservationStatus.ACTIVE).get(0);
